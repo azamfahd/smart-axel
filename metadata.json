@@ -1,0 +1,6 @@
+{
+  "name": "DataAudit AI Pro",
+  "description": "برنامج جداول بيانات احترافي متوافق مع Excel مزود بوكيل ذكاء اصطناعي محلي للتدقيق والتحليل واكتشاف التلاعب",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
