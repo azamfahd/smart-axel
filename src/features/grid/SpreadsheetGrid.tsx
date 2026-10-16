@@ -116,8 +116,11 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   // Handle cell click / selection
   const handleCellMouseDown = (row: number, col: number, e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click
-    if (editingCell && (editingCell.row !== row || editingCell.col !== col)) {
-      commitEdit();
+    if (editingCell) {
+      const ref = coordsToRef(row, col);
+      setEditText(prev => prev + ref);
+      e.stopPropagation();
+      return;
     }
     setEditingCell(null);
     setIsDraggingSelection(true);

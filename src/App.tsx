@@ -311,16 +311,62 @@ export default function App() {
     [workbook, selectedRange, pushHistory]
   );
 
-  // AutoSum feature
+  // AutoSum feature with intelligent range and direction detection
   const handleAutoSum = useCallback(() => {
     const minR = Math.min(selectedRange.startRow, selectedRange.endRow);
     const maxR = Math.max(selectedRange.startRow, selectedRange.endRow);
     const minC = Math.min(selectedRange.startCol, selectedRange.endCol);
+    const maxC = Math.max(selectedRange.startCol, selectedRange.endCol);
 
-    const sumRow = maxR + 1;
-    const formula = `=SUM(${coordsToRef(minR, minC)}:${coordsToRef(maxR, minC)})`;
-    handleUpdateCell(sumRow, minC, 0, formula);
-    setSelectedRange({ startRow: sumRow, startCol: minC, endRow: sumRow, endCol: minC });
+    let targetR = maxR + 1;
+    let targetC = minC;
+    let rangeRef = '';
+
+    if (minR === maxR && minC === maxC) {
+      if (minR > 0) {
+        rangeRef = `${coordsToRef(0, minC)}:${coordsToRef(minR - 1, minC)}`;
+        targetR = minR;
+      } else {
+        rangeRef = 'A1:A5';
+        targetR = minR;
+      }
+    } else if (minR !== maxR && minC === maxC) {
+      rangeRef = `${coordsToRef(minR, minC)}:${coordsToRef(maxR, minC)}`;
+      targetR = maxR + 1;
+      targetC = minC;
+    } else if (minR === maxR && minC !== maxC) {
+      rangeRef = `${coordsToRef(minR, minC)}:${coordsToRef(minR, maxC)}`;
+      targetR = minR;
+      targetC = maxC + 1;
+    } else {
+      rangeRef = `${coordsToRef(minR, minC)}:${coordsToRef(maxR, maxC)}`;
+      targetR = maxR + 1;
+      targetC = minC;
+    }
+
+    const formula = `=SUM(${rangeRef})`;
+    handleUpdateCell(targetR, targetC, 0, formula);
+    setSelectedRange({ startRow: targetR, startCol: targetC, endRow: targetR, endCol: targetC });
+  }, [selectedRange, handleUpdateCell]);
+
+  const handleSelectFunction = useCallback((syntax: string) => {
+    const minR = Math.min(selectedRange.startRow, selectedRange.endRow);
+    const maxR = Math.max(selectedRange.startRow, selectedRange.endRow);
+    const minC = Math.min(selectedRange.startCol, selectedRange.endCol);
+    const maxC = Math.max(selectedRange.startCol, selectedRange.endCol);
+
+    const startRef = coordsToRef(minR, minC);
+    const endRef = coordsToRef(maxR, maxC);
+    const rangeRef = (minR === maxR && minC === maxC)
+      ? `${coordsToRef(Math.max(0, minR - 5), minC)}:${coordsToRef(Math.max(0, minR - 1), minC)}`
+      : `${startRef}:${endRef}`;
+
+    const match = syntax.match(/^=([A-Z.]+)\(/i);
+    const fnName = match ? match[1] : 'SUM';
+
+    const finalFormula = `=${fnName}(${rangeRef})`;
+    handleUpdateCell(minR, minC, 0, finalFormula);
+    setSelectedRange({ startRow: minR, startCol: minC, endRow: minR, endCol: minC });
   }, [selectedRange, handleUpdateCell]);
 
   // Sort feature
@@ -1105,9 +1151,7 @@ export default function App() {
       <InsertFunctionDialog
         isOpen={isInsertFuncOpen}
         onClose={() => setIsInsertFuncOpen(false)}
-        onSelectFunction={syntax => {
-          handleUpdateCell(selectedRange.startRow, selectedRange.startCol, 0, syntax);
-        }}
+        onSelectFunction={handleSelectFunction}
         lang={lang}
       />
 
